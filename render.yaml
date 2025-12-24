@@ -3,9 +3,8 @@ services:
     name: outreach-wa-gateway
     env: node
     plan: free
-    rootDir: apps/wa-gateway
-    buildCommand: pnpm install --frozen-lockfile=false && pnpm build
-    startCommand: node dist/main.js
+    buildCommand: corepack enable && pnpm install --frozen-lockfile=false && pnpm -C apps/wa-gateway build
+    startCommand: node apps/wa-gateway/dist/main.js
     autoDeploy: true
     envVars:
       - key: PORT

@@ -36,3 +36,7 @@ apps/**/data/
 Thumbs.db
 .vscode/
 .idea/
+# local curl payloads
+_body*.json
+_body*.txt
+
