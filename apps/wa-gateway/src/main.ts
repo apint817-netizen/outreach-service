@@ -5,18 +5,19 @@ const EnvSchema = z.object({
   PORT: z.coerce.number().default(8787),
   GATEWAY_API_KEY: z.string().min(10).default("dev-key-change-me"),
 
-  // Meta WhatsApp Cloud API (будет работать на сервере)
   META_TOKEN: z.string().optional(),
   META_PHONE_NUMBER_ID: z.string().optional(),
   META_API_VERSION: z.string().default("v20.0"),
 
-  // Локально: не ходим в Meta, просто логируем payload
   DRY_RUN: z.coerce.boolean().default(true),
 });
 
 const env = EnvSchema.parse(process.env);
 
 const app = Fastify({ logger: true });
+
+// Render / healthchecks sometimes probe "/"
+app.get("/", async () => ({ ok: true, service: "wa-gateway", ts: Date.now() }));
 
 app.get("/health", async () => {
   return { ok: true, service: "wa-gateway", ts: Date.now(), dryRun: env.DRY_RUN };
@@ -47,15 +48,11 @@ app.post("/send-text", async (req, reply) => {
   }
 
   const body = SendTextSchema.parse(req.body);
-
-  // Старый endpoint оставляем: это “унифицированный” вход из локального ядра
-  // Сейчас он просто дергает meta-реализацию.
   const res = await sendViaMeta(body.to, body.text, req.log);
   return res;
 });
 
 async function sendViaMeta(to: string, text: string, log: any) {
-  // Локально не ходим в Meta: сетевой блок + нам нужен воспроизводимый тест
   if (env.DRY_RUN) {
     log.info({ to, textLen: text.length }, "DRY_RUN_META_SEND");
     return { ok: true, accepted: true, dryRun: true };
@@ -92,7 +89,6 @@ async function sendViaMeta(to: string, text: string, log: any) {
   return { ok: true, accepted: true, meta: data };
 }
 
-// Нормальная ошибка-обвязка
 app.setErrorHandler((err, _req, reply) => {
   const status = (err as any).statusCode ?? 500;
   reply.code(status).send({
@@ -102,8 +98,9 @@ app.setErrorHandler((err, _req, reply) => {
   });
 });
 
-app.listen({ port: env.PORT, host: "127.0.0.1" })
-  .then(() => app.log.info(`wa-gateway listening on http://127.0.0.1:${env.PORT}`))
+// IMPORTANT: Render needs 0.0.0.0, not 127.0.0.1
+app.listen({ port: env.PORT, host: "0.0.0.0" })
+  .then(() => app.log.info(`wa-gateway listening on http://0.0.0.0:${env.PORT}`))
   .catch((err) => {
     app.log.error(err);
     process.exit(1);
