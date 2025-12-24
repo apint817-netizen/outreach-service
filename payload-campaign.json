@@ -1,0 +1,7 @@
+﻿{
+  "name": "Test Campaign",
+  "mode": "cold",
+  "steps": [
+    { "text": "Hello {{displayName}}" }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "name": "@outreach/desktop-server",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/main.js",
+    "wa:bootstrap": "tsx src/wa/bootstrap.ts",
+    "wa:send:once": "tsx src/wa/sendOnce.ts",
+    "wa:inspect": "tsx src/wa/inspect.ts"
+  },
+  "dependencies": {
+    "@fastify/cors": "^8.5.0",
+    "@outreach/shared": "workspace:*",
+    "better-sqlite3": "^12.5.0",
+    "csv-parse": "^6.1.0",
+    "fastify": "^4.28.1",
+    "playwright": "^1.57.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^20.11.30",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}

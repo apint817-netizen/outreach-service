@@ -1,0 +1,29 @@
+﻿export enum CampaignMode {
+  COLD = "COLD",
+  WARM = "WARM"
+}
+
+export enum RunState {
+  DRAFT = "DRAFT",
+  READY = "READY",
+  RUNNING = "RUNNING",
+  PAUSED_BY_USER = "PAUSED_BY_USER",
+  PAUSED_BY_SYSTEM = "PAUSED_BY_SYSTEM",
+  STOPPED = "STOPPED",
+  COMPLETED = "COMPLETED",
+  FAILED = "FAILED"
+}
+
+export enum RiskState {
+  OK = "OK",
+  WARN = "WARN",
+  BLOCKED = "BLOCKED"
+}
+
+export enum ErrorCode {
+  UNKNOWN = "UNKNOWN",
+  DB_ERROR = "DB_ERROR",
+  VALIDATION_ERROR = "VALIDATION_ERROR",
+  SENDER_DISCONNECTED = "SENDER_DISCONNECTED",
+  SENDER_CAPTCHA = "SENDER_CAPTCHA"
+}

@@ -1,0 +1,9 @@
+﻿{
+  "name": "Кампания кириллица",
+  "mode": "cold",
+  "segmentId": null,
+  "steps": [
+    { "id": "s1", "order": 1, "text": "Сообщение 1" },
+    { "id": "s2", "order": 2, "text": "Сообщение 2", "delayAfterSec": 60 }
+  ]
+}
