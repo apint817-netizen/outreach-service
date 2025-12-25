@@ -5,26 +5,26 @@ function parseBool(v: unknown, def: boolean) {
   if (v === undefined || v === null) return def;
   if (typeof v === "boolean") return v;
 
-  const s = String(v).trim().toLowerCase();
+  const s = String(v).trim().toLowerCase().replace(/^"+|"+$/g, "");
   if (s === "") return def;
-  if (["1","true","yes","y","on"].includes(s)) return true;
-  if (["0","false","no","n","off"].includes(s)) return false;
-
-  // если прилетело что-то странное — оставляем дефолт
+  if (["1", "true", "yes", "y", "on"].includes(s)) return true;
+  if (["0", "false", "no", "n", "off"].includes(s)) return false;
   return def;
 }
 
+// Читаем переменные напрямую, чтобы поддержать опечатки в именах
+const GATEWAY_KEY =
+  process.env.GATEWAY_API_KEY ??
+  process.env.GATEWAY_API_KEY ?? // typo-safe (без WAY)
+  "dev-key-change-me";
+
+const META_TOKEN = process.env.META_TOKEN;
+const META_PHONE_NUMBER_ID = process.env.META_PHONE_NUMBER_ID;
+
+// Остальное — через Zod (без дублей)
 const EnvSchema = z.object({
   PORT: z.coerce.number().default(8787),
-
-  // поддерживаем оба варианта из Render/Blueprint
-  GATEWAY_API_KEY: z.string().min(10).optional(),  // правильное имя
-  GATEWAY_API_KEY: z.string().min(10).optional(),  // старое/ошибочное имя из UI
-
-  META_TOKEN: z.string().optional(),
-  META_PHONE_NUMBER_ID: z.string().optional(),
   META_API_VERSION: z.string().default("v20.0"),
-
   DRY_RUN: z.any().optional(),
 });
 
@@ -32,16 +32,16 @@ const raw = EnvSchema.parse(process.env);
 
 const env = {
   PORT: raw.PORT,
-  GATEWAY_API_KEY: raw.GATEWAY_API_KEY ?? raw.GATEWAY_API_KEY ?? "dev-key-change-me",
-  META_TOKEN: raw.META_TOKEN,
-  META_PHONE_NUMBER_ID: raw.META_PHONE_NUMBER_ID,
   META_API_VERSION: raw.META_API_VERSION,
   DRY_RUN: parseBool(raw.DRY_RUN, true),
+
+  GATEWAY_API_KEY: GATEWAY_KEY,
+  META_TOKEN,
+  META_PHONE_NUMBER_ID,
 };
 
 const app = Fastify({ logger: true });
 
-// Render healthcheck может стучаться в "/"
 app.get("/", async () => ({ ok: true, service: "wa-gateway", ts: Date.now(), dryRun: env.DRY_RUN }));
 
 app.get("/health", async () => {
@@ -119,7 +119,6 @@ app.setErrorHandler((err, _req, reply) => {
   reply.code(status).send({ ok: false, error: "GATEWAY_ERROR", message: err.message });
 });
 
-// Render требует bind на 0.0.0.0
 app.listen({ port: env.PORT, host: "0.0.0.0" })
   .then(() => app.log.info(`wa-gateway listening on http://0.0.0.0:${env.PORT}`))
   .catch((err) => {
