@@ -1,23 +1,47 @@
 import Fastify from "fastify";
 import { z } from "zod";
 
+function parseBool(v: unknown, def: boolean) {
+  if (v === undefined || v === null) return def;
+  if (typeof v === "boolean") return v;
+  const s = String(v).trim().toLowerCase();
+  if (s === "" ) return def;
+  if (["1","true","yes","y","on"].includes(s)) return true;
+  if (["0","false","no","n","off"].includes(s)) return false;
+  // если прилетело что-то странное — не включаем отправку молча
+  return def;
+}
+
 const EnvSchema = z.object({
   PORT: z.coerce.number().default(8787),
-  GATEWAY_API_KEY: z.string().min(10).default("dev-key-change-me"),
+
+  // принимаем оба имени, чтобы не ловить такие баги от Render/Blueprint
+  GATEWAY_API_KEY: z.string().min(10).optional(),
+  GATEWAY_API_KEY: z.string().min(10).optional(),
 
   META_TOKEN: z.string().optional(),
   META_PHONE_NUMBER_ID: z.string().optional(),
   META_API_VERSION: z.string().default("v20.0"),
 
-  DRY_RUN: z.coerce.boolean().default(true),
+  // DRY_RUN парсим вручную (z.coerce.boolean() тут опасен)
+  DRY_RUN: z.any().optional(),
 });
 
-const env = EnvSchema.parse(process.env);
+const envRaw = EnvSchema.parse(process.env);
+
+const env = {
+  PORT: envRaw.PORT,
+  GATEWAY_API_KEY: envRaw.GATEWAY_API_KEY ?? envRaw.GATEWAY_API_KEY ?? "dev-key-change-me",
+  META_TOKEN: envRaw.META_TOKEN,
+  META_PHONE_NUMBER_ID: envRaw.META_PHONE_NUMBER_ID,
+  META_API_VERSION: envRaw.META_API_VERSION,
+  DRY_RUN: parseBool(envRaw.DRY_RUN, true),
+};
 
 const app = Fastify({ logger: true });
 
 // Render / healthchecks sometimes probe "/"
-app.get("/", async () => ({ ok: true, service: "wa-gateway", ts: Date.now() }));
+app.get("/", async () => ({ ok: true, service: "wa-gateway", ts: Date.now(), dryRun: env.DRY_RUN }));
 
 app.get("/health", async () => {
   return { ok: true, service: "wa-gateway", ts: Date.now(), dryRun: env.DRY_RUN };
